@@ -1,0 +1,135 @@
+﻿@model IEnumerable<ContactManager.Models.Contact>
+@{
+    ViewData["Title"] = "Contact";
+}
+
+<form asp-action="UploadCsv" method="post" enctype="multipart/form-data">
+    <input type="file" name="file" />
+    <button type="submit">Upload CSV</button>
+</form>
+
+
+
+<table id="contactsTable">
+    <thead>
+        <tr>
+            <th onclick="sortTable(0)">Name</th>
+            <th onclick="sortTable(1)">Date of Birth</th>
+            <th onclick="sortTable(2)">Married</th>
+            <th onclick="sortTable(3)">Phone</th>
+            <th onclick="sortTable(4)">Salary</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var contact in Model)
+        {
+            <tr id="contact-@contact.Id">
+                <td contenteditable="true" id="name-@contact.Id">@contact.Name</td>
+                <td contenteditable="true" id="dob-@contact.Id">@contact.DateOfBirth.ToString("yyyy-MM-dd")</td>
+                <td contenteditable="true" id="married-@contact.Id">@contact.Married</td>
+                <td contenteditable="true" id="phone-@contact.Id">@contact.Phone</td>
+                <td contenteditable="true" id="salary-@contact.Id">@contact.Salary</td>
+                <td>
+                    <button onclick="updateContact(@contact.Id)">Save</button>
+                    <button onclick="deleteContact(@contact.Id)">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+
+
+<script>
+
+    
+    let sortDirection = [true, true, true, true, true]; 
+
+    function sortTable(columnIndex) {
+        const table = document.getElementById("contactsTable");
+        const rows = Array.from(table.rows).slice(1);
+        const direction = sortDirection[columnIndex] ? 1 : -1;
+
+        rows.sort((a, b) => {
+            const cellA = a.cells[columnIndex].innerText;
+            const cellB = b.cells[columnIndex].innerText;
+
+            if (columnIndex === 1) {
+               
+                return direction * (new Date(cellA) - new Date(cellB));
+            }
+
+            if (columnIndex === 4) {
+               
+                return direction * (parseFloat(cellA) - parseFloat(cellB));
+            }
+
+            
+            return direction * (cellA.localeCompare(cellB));
+        });
+
+        rows.forEach(row => table.appendChild(row)); 
+        sortDirection[columnIndex] = !sortDirection[columnIndex]; 
+    }
+
+
+
+    function updateContact(id) {
+        const updatedContact = {
+            name: document.getElementById('name-' + id).innerText,
+            dateOfBirth: document.getElementById('dob-' + id).innerText,
+            married: document.getElementById('married-' + id).innerText === 'True', 
+            salary: parseFloat(document.getElementById('salary-' + id).innerText) 
+        };
+
+        fetch(`/Home/Edit/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updatedContact)
+        })
+            .then(response => {
+                if (response.ok) {
+                    alert('Contact updated successfully');
+                    location.reload(); // Refresh the page
+                } else {
+                    alert('Failed to update contact');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating contact');
+            });
+    }
+
+
+    function deleteContact(id) {
+        // Ensure correct URL format
+        const url = `/Home/Delete/${id}`;
+
+        fetch(url, {
+            method: 'DELETE'
+        })
+            .then(response => {
+                if (response.ok) {
+                    // If delete is successful, reload the page
+                    location.reload();
+                } else {
+                    // If there was an error, alert the user
+                    alert('Failed to delete contact.');
+                }
+            })
+            .catch(error => {
+                // Log the error and alert the user
+                console.error('Error:', error);
+                alert('Error occurred while deleting the contact.');
+            });
+    }
+
+
+
+
+
+</script>
